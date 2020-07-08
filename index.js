@@ -41,46 +41,68 @@ server.get('/api/users/:id', async (req, res) => {
 
 // create a user
 server.post('/api/users', async (req, res) => {
-  if (req.body.name && req.body.bio) {
-    const newUser = db.insert({
-      name: req.body.name,
-      bio: req.body.bio,
-    })
-    res.json(await db.find())
-  } else {
-    res.json({
-      message: "Could not post user"
+  try {
+    if (req.body.name == '' || req.body.bio == '') {
+      res.status(400).json({
+        errorMessage: "Please provide name and bio for the user."
+      })
+    } else {
+      const newUser = db.insert({
+        name: req.body.name,
+        bio: req.body.bio,
+      })
+      res.status(201).json(await db.find())
+    }
+  } catch {
+    res.status(500).json({
+      errorMessage: 'There was an error while saving the user to the database.'
     })
   }
 })
 
 // edit a user by id
 server.put('/api/users/:id', async (req, res) => {
-  const user = await db.findById(req.params.id)
-  if (user) {
-    const updated = db.update(user.id, {
-      name: req.body.name,
-      bio: req.body.bio
-    })
-    if (await updated) {
-      res.json(await db.find())
+  try {
+    const user = await db.findById(req.params.id)
+    if (user) {
+      if (req.body.name == '' || req.body.bio == '') {
+        res.status(400).json({
+          errorMessage: "Please provide name and bio for the user."
+        })
+      } else {
+        const updated = await db.update(user.id, {
+          name: req.body.name,
+          bio: req.body.bio
+        })
+        res.status(200).json(await db.find())
+      }
+    } else {
+      res.status(404).json({
+        message: 'The user with the specified ID does not exist.'
+      })
     }
-  } else {
-    res.json({
-      message: 'Could not update user'
+  } catch {
+    res.status(500).json({
+      errorMessage: 'The user information could not be modified.'
     })
   }
 })
 
 // delete a user by id
 server.delete('/api/users/:id', async (req, res) => {
-  const user = await db.findById(req.params.id)
-  if (user) {
-    const deleted = db.remove(user.id)
-    res.json(await deleted)
-  } else {
-    res.json({
-      message: 'User not found'
+  try {
+    const user = await db.findById(req.params.id)
+    if (user) {
+      const deleted = db.remove(user.id)
+      res.json(await deleted)
+    } else {
+      res.status(404).json({
+        message: 'The user with the specified ID does not exist.'
+      })
+    }
+  } catch {
+    res.status(500).json({
+      errorMessage: "The user could not be removed."
     })
   }
 })
